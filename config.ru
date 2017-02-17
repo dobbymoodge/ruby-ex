@@ -1,5 +1,5 @@
 require 'rack/lobster'
-require 'ldap'
+require 'net/ldap'
 
 HOST        = 'ldap.rdu.redhat.com'
 BASE_DN     = 'ou=Users, dc=redhat, dc=com'
@@ -19,16 +19,15 @@ end
 
 map '/ldap' do
   def ldap_connect
-    ldap = LDAP::Conn.new(HOST, LDAP::LDAP_PORT.to_i)
-    ldap.set_option(LDAP::LDAP_OPT_PROTOCOL_VERSION, 3)
+    ldap = Net::LDAP.new(host: HOST, port: 389)
     ldap
   end
 
   def ldap_user_by_uid(uid)
     user = nil
     ldap = ldap_connect
-    ldap.bind do
-      ldap.search(BASE_DN, LDAP::LDAP_SCOPE_SUBTREE, "(uid=#{uid})", ATTRS) do |entry|
+    if ldap.bind
+      ldap.search(base: BASE_DN, scope: Net::LDAP::SearchScope_WholeSubtree, filter: "(uid=#{uid})", attribute: ATTRS) do |entry|
         #email = entry.vals('mail')[0]
         user = entry
       end
